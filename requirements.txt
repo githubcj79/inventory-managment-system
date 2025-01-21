@@ -1,0 +1,24 @@
+# MongoDB driver
+pymongo==4.6.1
+
+# Environment variables management
+python-dotenv==1.0.0
+
+# AWS Lambda utilities
+aws-lambda-powertools==2.30.1
+
+# JSON handling and data validation
+bson==0.5.10
+
+# AWS SDK
+boto3==1.34.14
+botocore==1.34.14
+
+# Logging and monitoring
+structlog==23.2.0
+
+# HTTP client for testing
+requests==2.31.0
+
+# Date/time handling
+pytz==2023.3.post1

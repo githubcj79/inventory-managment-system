@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  inventory-managment-system
+  
+  Sample SAM Template for inventory-managment-system
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    CodeUri: src/
+    Environment:
+      Variables:
+        MONGO_DB_URI: mongodb://mongo:27017/
+
+Resources:
+  ProductList:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: ProductList
+      Events:
+        GetProducts:
+          Type: Api
+          Properties:
+            Path: /api/products
+            Method: get
+
+  ProductGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: ProductGet
+      Events:
+        GetProduct:
+          Type: Api
+          Properties:
+            Path: /api/products/{id}
+            Method: get
+
+  ProductCreate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: ProductCreate
+      Events:
+        CreateProduct:
+          Type: Api
+          Properties:
+            Path: /api/products
+            Method: post
+
+  ProductUpdate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: ProductUpdate
+      Events:
+        UpdateProduct:
+          Type: Api
+          Properties:
+            Path: /api/products/{id}
+            Method: put
+
+  ProductDelete:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: ProductDelete
+      Events:
+        DeleteProduct:
+          Type: Api
+          Properties:
+            Path: /api/products/{id}
+            Method: delete
+
+  InventoryCreate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: InventoryCreate
+      Events:
+        CreateInventory:
+          Type: Api
+          Properties:
+            Path: /api/inventory
+            Method: post
+
+  StockInventory:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: StockInventory
+      Events:
+        GetInventory:
+          Type: Api
+          Properties:
+            Path: /api/stores/{id}/inventory
+            Method: get
+
+  StockTransfer:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: StockTransfer
+      Events:
+        TransferStock:
+          Type: Api
+          Properties:
+            Path: /api/inventory/transfer
+            Method: post
+
+  StockAlerts:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          FUNCTION_NAME: StockAlerts
+      Events:
+        GetAlerts:
+          Type: Api
+          Properties:
+            Path: /api/inventory/alert
+            Method: get
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

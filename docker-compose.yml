@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest  # Use the latest MongoDB image from Docker Hub
+    container_name: mongo
+    ports:
+      - "27017:27017"  # Expose MongoDB on the default port (localhost:27017)
+    volumes:
+      - mongo-data:/data/db  # Use a named volume to persist MongoDB data
+    networks:
+      - backend  # Connect to the custom network called 'backend'
+
+volumes:
+  mongo-data:
+    driver: local  # Ensure the volume is created locally to persist data
+
+networks:
+  backend:
+    driver: bridge  # Use bridge networking for container communication
