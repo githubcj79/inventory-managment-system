@@ -62,7 +62,7 @@ def setup_indexes(mongodb_uri):
 
 def main():
     """Main function to set up MongoDB indexes."""
-    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
+    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true')
     
     try:
         logger.info(f"Connecting to MongoDB at {mongodb_uri}")

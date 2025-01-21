@@ -2,19 +2,34 @@ version: '3.8'
 
 services:
   mongo:
-    image: mongo:latest  # Use the latest MongoDB image from Docker Hub
+    image: mongo:latest
     container_name: mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
-      - "27017:27017"  # Expose MongoDB on the default port (localhost:27017)
+      - "27017:27017"
     volumes:
-      - mongo-data:/data/db  # Use a named volume to persist MongoDB data
+      - mongo-data:/data/db
     networks:
-      - backend  # Connect to the custom network called 'backend'
+      - backend
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "try { rs.status() } catch (err) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'mongo:27017'}]}) }"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  mongo-init:
+    image: mongo:latest
+    depends_on:
+      - mongo
+    command: ["mongosh", "--host", "mongo:27017", "--eval", "try { rs.status(); } catch (err) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }); }"]
+    networks:
+      - backend
 
 volumes:
   mongo-data:
-    driver: local  # Ensure the volume is created locally to persist data
+    driver: local
 
 networks:
   backend:
-    driver: bridge  # Use bridge networking for container communication
+    driver: bridge
