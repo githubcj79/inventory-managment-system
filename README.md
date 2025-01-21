@@ -46,10 +46,13 @@ pip install -r requirements.txt
 4. Start MongoDB using Docker:
 docker-compose up -d
 
-5. Build the SAM application:
+5. Run the initialization script:
+python scripts/init_db.py
+
+6. Build the SAM application:
 sam build
 
-6. Start the local API:
+7. Start the local API:
 sam local start-api --docker-network inventory-managment-system_backend
 
 ## API Endpoints
