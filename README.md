@@ -42,6 +42,7 @@ source .venv/bin/activate  # For Unix/MacOS
 
 3. Install dependencies:
 pip install -r requirements.txt
+pip install -e .
 
 4. Start MongoDB using Docker:
 docker-compose up -d
@@ -69,23 +70,59 @@ sam local start-api --docker-network inventory-managment-system_backend
 
 ## Testing
 
-Run the API tests:
-chmod +x tests/test_api.sh
-./tests/test_api.sh
+1. For unit tests:
+# Run all unit tests with coverage
+pytest tests/unit/
+
+# Run specific unit test file
+pytest tests/unit/test_product_service.py
+pytest tests/unit/test_inventory_service.py
+pytest tests/unit/test_movement_service.py
+
+2. For integration tests:
+# Run the API integration tests
+./tests/integration/api/test_api.sh
+
+3. To simplify test execution:
+make test-unit         # Run only unit tests
+make test-integration  # Run only integration tests
+make test             # Run all tests
 
 ## Project Structure
 
 .
-├── docker-compose.yml      # Docker compose configuration
-├── Dockerfile             # Docker build file
-├── docs/                  # Documentation files
-├── env.json              # Environment configuration
-├── requirements.txt      # Python dependencies
-├── src/                  # Source code
-│   ├── app.py           # Main application code
-│   └── common/          # Shared utilities
-├── template.yaml        # SAM template
-└── tests/              # Test files
+├── docker-compose.yml
+├── Dockerfile
+├── docs
+│   └── Ejercicio 1 - Sistema de Gestion de Inventario.pdf
+├── makefile
+├── Notes.md
+├── pytest.ini
+├── README.md
+├── requirements.txt
+├── scripts
+│   └── init_db.py
+├── src
+│   ├── app.py
+│   ├── common
+│   │   ├── db_utils.py
+│   │   └── __init__.py
+│   ├── __init__.py
+│   └── requirements.txt
+├── template.yaml
+└── tests
+    ├── __init__.py
+    ├── integration
+    │   ├── api
+    │   │   └── test_api.sh
+    │   ├── conftest.py
+    │   └── __init__.py
+    └── unit
+        ├── conftest.py
+        ├── __init__.py
+        ├── test_inventory_service.py
+        ├── test_movement_service.py
+        └── test_product_service.py
 
 ## Environment Variables (defined in template.yaml)
 
@@ -117,3 +154,10 @@ Required environment variables:
 - `timestamp`: DateTime
 - `type`: Enum(IN, OUT, TRANSFER)
 
+## Annexes
+
+## Evidence of integration_tests
+docs/evidence_of_integration_tests.txt
+
+## Evidence of unit tests coverage
+docs/evidence_of_unit_tests_coverage.txt

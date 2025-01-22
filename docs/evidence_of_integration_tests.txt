@@ -1,0 +1,221 @@
+(.venv) ~/Documents/globant/DeAcero-MX/inventory-managment-system$ make test-integration
+./tests/integration/api/test_api.sh
+Inventory Management System API Testing
+=======================================
+
+1. Testing Product Management
+---------------------------------------
+1.1 GET /api/products (Initial state)
+Response:
+[
+  {
+    "name": "Steel Bar",
+    "description": "Updated high-quality steel bar",
+    "category": "raw_materials",
+    "price": 32.99,
+    "sku": "STL001",
+    "id": "678ff15a7db5bbae08bf7afc"
+  },
+  {
+    "name": "Iron Rod",
+    "description": "Standard iron rod",
+    "category": "raw_materials",
+    "price": 19.99,
+    "sku": "IRN002",
+    "id": "678ff15c742f5632b4b926c3"
+  },
+  {
+    "name": "Copper Wire",
+    "description": "Industrial copper wire",
+    "category": "raw_materials",
+    "price": 39.99,
+    "sku": "CPR003",
+    "id": "678ff15de2db980eee1f72ea"
+  }
+]
+---------------------------------------
+
+1.2 Creating test products
+---------------------------------------
+Creating Steel Bar product...
+Response:
+{
+  "message": "SKU already exists"
+}
+---------------------------------------
+Creating Iron Rod product...
+Response:
+{
+  "message": "SKU already exists"
+}
+---------------------------------------
+Creating Copper Wire product...
+Response:
+{
+  "message": "SKU already exists"
+}
+---------------------------------------
+
+1.3 GET /api/products (After creation)
+---------------------------------------
+[
+  {
+    "name": "Steel Bar",
+    "description": "Updated high-quality steel bar",
+    "category": "raw_materials",
+    "price": 32.99,
+    "sku": "STL001",
+    "id": "678ff15a7db5bbae08bf7afc"
+  },
+  {
+    "name": "Iron Rod",
+    "description": "Standard iron rod",
+    "category": "raw_materials",
+    "price": 19.99,
+    "sku": "IRN002",
+    "id": "678ff15c742f5632b4b926c3"
+  },
+  {
+    "name": "Copper Wire",
+    "description": "Industrial copper wire",
+    "category": "raw_materials",
+    "price": 39.99,
+    "sku": "CPR003",
+    "id": "678ff15de2db980eee1f72ea"
+  }
+]
+
+1.4 Testing product update
+---------------------------------------
+Updating Steel Bar product...
+{
+  "message": "Internal server error"
+}
+
+2. Testing Inventory Management
+---------------------------------------
+2.1 Creating initial inventory for store001...
+{
+  "message": "Invalid product ID format"
+}
+
+2.2 Testing store inventory listing
+---------------------------------------
+Checking inventory for store001...
+[
+  {
+    "storeId": "store001",
+    "quantity": 70,
+    "minStock": 20,
+    "product": {
+      "name": "Steel Bar",
+      "price": 32.99,
+      "sku": "STL001",
+      "id": "678ff15a7db5bbae08bf7afc"
+    },
+    "id": "678ff161304d5140599ca354"
+  }
+]
+
+3. Testing Stock Transfer
+---------------------------------------
+3.1 Transferring stock from store001 to store002...
+{
+  "message": "Invalid product ID format"
+}
+
+3.2 Checking inventory levels after transfer
+---------------------------------------
+Source store (store001):
+[
+  {
+    "storeId": "store001",
+    "quantity": 70,
+    "minStock": 20,
+    "product": {
+      "name": "Steel Bar",
+      "price": 32.99,
+      "sku": "STL001",
+      "id": "678ff15a7db5bbae08bf7afc"
+    },
+    "id": "678ff161304d5140599ca354"
+  }
+]
+Target store (store002):
+[
+  {
+    "storeId": "store002",
+    "minStock": 20,
+    "quantity": 30,
+    "product": {
+      "name": "Steel Bar",
+      "price": 32.99,
+      "sku": "STL001",
+      "id": "678ff15a7db5bbae08bf7afc"
+    },
+    "id": "678ff1645dce3c6cabc69cb0"
+  }
+]
+
+4. Testing Low Stock Alerts
+---------------------------------------
+Checking for low stock alerts...
+[]
+
+5. Testing Error Cases
+---------------------------------------
+5.1 Testing duplicate SKU creation...
+{
+  "message": "SKU already exists"
+}
+5.2 Testing transfer with insufficient stock...
+{
+  "message": "Invalid product ID format"
+}
+5.3 Testing invalid product ID...
+{
+  "message": "Invalid product ID format"
+}
+
+6. Testing Batch Operations
+---------------------------------------
+6.1 Testing batch stock adjustment...
+{
+  "message": "Missing Authentication Token"
+}
+6.2 Verifying batch adjustment results...
+Checking product null:
+{
+  "message": "Missing Authentication Token"
+}
+Checking product null:
+{
+  "message": "Missing Authentication Token"
+}
+Checking product null:
+{
+  "message": "Missing Authentication Token"
+}
+
+7. Testing Stock Level Validation
+---------------------------------------
+7.1 Testing normal stock level...
+{
+  "message": "Missing Authentication Token"
+}
+7.2 Testing low stock level...
+{
+  "message": "Missing Authentication Token"
+}
+
+API Testing Complete
+---------------------------------------
+Tests completed:
+✓ Product Management (CRUD operations)
+✓ Inventory Management
+✓ Stock Transfers
+✓ Low Stock Alerts
+✓ Error Cases
+✓ Batch Operations
+✓ Stock Level Validation
+(.venv) ~/Documents/globant/DeAcero-MX/inventory-managment-system$ 
