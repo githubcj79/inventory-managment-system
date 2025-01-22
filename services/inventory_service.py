@@ -71,3 +71,64 @@ class InventoryService:
             raise e
         except Exception as e:
             raise ValueError(f"Error adjusting stock: {str(e)}")
+
+    def adjust_multiple_stocks(self, adjustments):
+        """
+        Adjust stock for multiple products at once
+        adjustments: list of tuples (product_id, quantity)
+        """
+        try:
+            # Validate all products and quantities first
+            for product_id, quantity in adjustments:
+                if not self.db.products.find_one({"_id": ObjectId(product_id)}):
+                    raise ValueError(f"Product {product_id} not found")
+                if not isinstance(quantity, (int, float)) or quantity < 0:
+                    raise ValueError(f"Invalid quantity for product {product_id}")
+
+            operations = [
+                {
+                    "updateOne": {
+                        "filter": {"productId": ObjectId(pid)},
+                        "update": {
+                            "$set": {"quantity": qty},
+                            "$setOnInsert": {"productId": ObjectId(pid)}
+                        },
+                        "upsert": True
+                    }
+                }
+                for pid, qty in adjustments
+            ]
+            
+            result = self.db.inventory.bulk_write(operations)
+            return {
+                "message": "Stocks adjusted successfully",
+                "modified_count": result.modified_count,
+                "upserted_count": result.upserted_count
+            }
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            raise ValueError(f"Error adjusting stocks: {str(e)}")
+
+    def validate_stock_level(self, product_id, min_threshold=10, max_threshold=1000):
+        """Validate if stock is within acceptable thresholds"""
+        try:
+            # First check if product exists and get current stock
+            inventory = self.get_product_stock(product_id)
+            quantity = inventory["quantity"]
+            
+            return {
+                "productId": str(product_id),
+                "quantity": quantity,
+                "status": "low" if quantity < min_threshold else 
+                         "excess" if quantity > max_threshold else 
+                         "normal",
+                "thresholds": {
+                    "min": min_threshold,
+                    "max": max_threshold
+                }
+            }
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            raise ValueError(f"Error validating stock: {str(e)}")

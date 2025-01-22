@@ -1,7 +1,7 @@
 # tests/unit/test_inventory_service.py
 import pytest
 from bson import ObjectId
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 from services.inventory_service import InventoryService
 
@@ -166,11 +166,13 @@ class TestInventoryService:
         # Arrange
         product_id = str(ObjectId())
         mock_db.products.find_one.return_value = {"_id": ObjectId(product_id)}
+        invalid_quantities = ["10", "abc", None, [], {}]
 
         # Act & Assert
-        with pytest.raises(ValueError) as exc:
-            inventory_service.adjust_stock(product_id, "invalid")
-        assert str(exc.value) == "Quantity must be a positive number"
+        for invalid_quantity in invalid_quantities:
+            with pytest.raises(ValueError) as exc:
+                inventory_service.adjust_stock(product_id, invalid_quantity)
+            assert str(exc.value) == "Quantity must be a positive number"
 
     def test_adjust_stock_database_error(self, inventory_service, mock_db):
         # Arrange
@@ -182,3 +184,103 @@ class TestInventoryService:
         with pytest.raises(ValueError) as exc:
             inventory_service.adjust_stock(product_id, 100)
         assert "Error adjusting stock" in str(exc.value)
+
+    def test_adjust_multiple_stocks_success(self, inventory_service, mock_db):
+        # Arrange
+        adjustments = [
+            (str(ObjectId()), 100),
+            (str(ObjectId()), 200)
+        ]
+        mock_db.products.find_one.return_value = {"_id": ObjectId()}
+        
+        bulk_write_result = MagicMock()
+        bulk_write_result.modified_count = 1
+        bulk_write_result.upserted_count = 1
+        mock_db.inventory.bulk_write.return_value = bulk_write_result
+
+        # Act
+        result = inventory_service.adjust_multiple_stocks(adjustments)
+
+        # Assert
+        assert "message" in result
+        assert result["modified_count"] == 1
+        assert result["upserted_count"] == 1
+        mock_db.inventory.bulk_write.assert_called_once()
+
+    def test_adjust_multiple_stocks_product_not_found(self, inventory_service, mock_db):
+        # Arrange
+        adjustments = [
+            (str(ObjectId()), 100),
+            (str(ObjectId()), 200)
+        ]
+        mock_db.products.find_one.return_value = None
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc:
+            inventory_service.adjust_multiple_stocks(adjustments)
+        assert "Product" in str(exc.value)
+        assert "not found" in str(exc.value)
+
+    def test_adjust_multiple_stocks_invalid_quantity(self, inventory_service, mock_db):
+        # Arrange
+        product_id = str(ObjectId())
+        adjustments = [
+            (product_id, 100),
+            (product_id, -50)  # Invalid quantity
+        ]
+        mock_db.products.find_one.return_value = {"_id": ObjectId()}
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc:
+            inventory_service.adjust_multiple_stocks(adjustments)
+        assert "Invalid quantity for product" in str(exc.value)
+
+    def test_validate_stock_level_normal(self, inventory_service, mock_db):
+        # Arrange
+        product_id = str(ObjectId())
+        mock_db.products.find_one.return_value = {"_id": ObjectId(product_id)}
+        mock_db.inventory.find_one.return_value = {
+            "productId": ObjectId(product_id),
+            "quantity": 500
+        }
+
+        # Act
+        result = inventory_service.validate_stock_level(product_id, 10, 1000)
+
+        # Assert
+        assert result["status"] == "normal"
+        assert result["quantity"] == 500
+        assert result["thresholds"]["min"] == 10
+        assert result["thresholds"]["max"] == 1000
+
+    def test_validate_stock_level_low(self, inventory_service, mock_db):
+        # Arrange
+        product_id = str(ObjectId())
+        mock_db.products.find_one.return_value = {"_id": ObjectId(product_id)}
+        mock_db.inventory.find_one.return_value = {
+            "productId": ObjectId(product_id),
+            "quantity": 5
+        }
+
+        # Act
+        result = inventory_service.validate_stock_level(product_id, 10, 1000)
+
+        # Assert
+        assert result["status"] == "low"
+        assert result["quantity"] == 5
+
+    def test_validate_stock_level_excess(self, inventory_service, mock_db):
+        # Arrange
+        product_id = str(ObjectId())
+        mock_db.products.find_one.return_value = {"_id": ObjectId(product_id)}
+        mock_db.inventory.find_one.return_value = {
+            "productId": ObjectId(product_id),
+            "quantity": 1500
+        }
+
+        # Act
+        result = inventory_service.validate_stock_level(product_id, 10, 1000)
+
+        # Assert
+        assert result["status"] == "excess"
+        assert result["quantity"] == 1500
