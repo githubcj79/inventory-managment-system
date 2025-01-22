@@ -71,6 +71,7 @@ def validate_fields(data, required_fields):
     if missing_fields:
         raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
 
+
 def lambda_handler(event, context):
     """
     Main Lambda handler that routes requests to appropriate functions.
@@ -82,34 +83,34 @@ def lambda_handler(event, context):
     Returns:
         dict: API Gateway response object
     """
-    function_name = os.getenv('FUNCTION_NAME')
+    # Define function mapping dictionary
+    function_map = {
+        "ProductList": list_products,
+        "ProductGet": get_product,
+        "ProductCreate": create_product,
+        "ProductUpdate": update_product,
+        "ProductDelete": delete_product,
+        "InventoryCreate": create_inventory,
+        "StockInventory": list_inventory,
+        "StockTransfer": transfer_stock,
+        "StockAlerts": low_stock_alerts
+    }
     
     try:
-        if function_name == "ProductList":
-            return list_products(event)
-        elif function_name == "ProductGet":
-            return get_product(event)
-        elif function_name == "ProductCreate":
-            return create_product(event)
-        elif function_name == "ProductUpdate":
-            return update_product(event)
-        elif function_name == "ProductDelete":
-            return delete_product(event)
-        elif function_name == "InventoryCreate":
-            return create_inventory(event)
-        elif function_name == "StockInventory":
-            return list_inventory(event)
-        elif function_name == "StockTransfer":
-            return transfer_stock(event)
-        elif function_name == "StockAlerts":
-            return low_stock_alerts(event)
-        else:
-            return create_response(400, {"message": "Invalid function name"})
+        function_name = os.getenv('FUNCTION_NAME')
+        handler_function = function_map.get(function_name)
+        
+        if handler_function:
+            return handler_function(event)
+        
+        return create_response(400, {"message": "Invalid function name"})
+    
     except ValueError as e:
         return create_response(400, {"message": str(e)})
     except Exception as e:
         print(f"Error: {str(e)}")
         return create_response(500, {"message": "Internal server error"})
+
 
 def list_products(event):
     """
