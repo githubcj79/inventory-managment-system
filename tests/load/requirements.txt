@@ -1,0 +1,3 @@
+# tests/load/requirements.txt
+locust==2.15.1
+pymongo>=4.6.1
