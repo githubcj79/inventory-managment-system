@@ -4,15 +4,12 @@ pymongo==4.6.1
 # Environment variables management
 python-dotenv==1.0.0
 
-# AWS Lambda utilities
+# AWS Lambda utilities (includes logging, tracing, and metrics)
 aws-lambda-powertools==2.30.1
 
 # AWS SDK
 boto3==1.34.14
 botocore==1.34.14
-
-# Logging and monitoring
-structlog==23.2.0
 
 # Date/time handling
 pytz==2023.3.post1

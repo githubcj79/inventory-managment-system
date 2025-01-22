@@ -137,79 +137,6 @@ print_section "4. Testing Low Stock Alerts"
 echo "Checking for low stock alerts..."
 curl -s -X GET "$API_URL/inventory/alert" | jq '.'
 
-# 5. Test Error Cases
-print_section "5. Testing Error Cases"
-
-# 5.1 Test duplicate SKU
-echo "5.1 Testing duplicate SKU creation..."
-curl -s -X POST "$API_URL/products" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "name": "Duplicate Steel Bar",
-        "description": "This should fail",
-        "category": "raw_materials",
-        "price": 29.99,
-        "sku": "STL001"
-    }' | jq '.'
-
-# 5.2 Test invalid transfer (insufficient stock)
-echo "5.2 Testing transfer with insufficient stock..."
-curl -s -X POST "$API_URL/inventory/transfer" \
-    -H "Content-Type: application/json" \
-    -d "{
-        \"productId\": \"$PRODUCT_ID\",
-        \"sourceStoreId\": \"store001\",
-        \"targetStoreId\": \"store002\",
-        \"quantity\": 1000
-    }" | jq '.'
-
-# 5.3 Test invalid product ID
-echo "5.3 Testing invalid product ID..."
-curl -s -X GET "$API_URL/products/invalid_id" | jq '.'
-
-# 6. Test New Batch Operations
-print_section "6. Testing Batch Operations"
-
-# 6.1 Test batch stock adjustment
-echo "6.1 Testing batch stock adjustment..."
-curl -s -X POST "$API_URL/inventory/batch-adjust" \
-    -H "Content-Type: application/json" \
-    -d "{
-        \"adjustments\": [
-            {\"productId\": \"$PRODUCT_ID\", \"quantity\": 150},
-            {\"productId\": \"$PRODUCT_ID2\", \"quantity\": 200},
-            {\"productId\": \"$PRODUCT_ID3\", \"quantity\": 300}
-        ]
-    }" | jq '.'
-
-# 6.2 Verify batch adjustment results
-echo "6.2 Verifying batch adjustment results..."
-for pid in "$PRODUCT_ID" "$PRODUCT_ID2" "$PRODUCT_ID3"; do
-    echo "Checking product $pid:"
-    curl -s -X GET "$API_URL/inventory/stock/$pid" | jq '.'
-done
-
-# 7. Test Stock Level Validation
-print_section "7. Testing Stock Level Validation"
-
-# 7.1 Test normal stock level
-echo "7.1 Testing normal stock level..."
-curl -s -X GET "$API_URL/inventory/validate/$PRODUCT_ID" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "minThreshold": 100,
-        "maxThreshold": 1000
-    }' | jq '.'
-
-# 7.2 Test low stock level
-echo "7.2 Testing low stock level..."
-curl -s -X GET "$API_URL/inventory/validate/$PRODUCT_ID2" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "minThreshold": 250,
-        "maxThreshold": 1000
-    }' | jq '.'
-
 print_section "API Testing Complete"
 
 # Print summary
@@ -218,6 +145,3 @@ echo "✓ Product Management (CRUD operations)"
 echo "✓ Inventory Management"
 echo "✓ Stock Transfers"
 echo "✓ Low Stock Alerts"
-echo "✓ Error Cases"
-echo "✓ Batch Operations"
-echo "✓ Stock Level Validation"

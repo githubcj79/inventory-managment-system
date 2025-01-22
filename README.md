@@ -54,7 +54,7 @@ python scripts/init_db.py
 sam build
 
 7. Start the local API:
-sam local start-api --docker-network inventory-managment-system_backend
+sam local start-api   --debug   --docker-network inventory-managment-system_backend --log-file ./output.log
 
 ## API Endpoints
 

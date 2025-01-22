@@ -1,8 +1,12 @@
 # common/db_utils.py
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+from aws_lambda_powertools import Logger
 import os
 import sys
+
+# Initialize logger
+logger = Logger(service="inventory-management", child=True)
 
 def get_mongo_client():
     try:
@@ -10,11 +14,12 @@ def get_mongo_client():
         mongo_uri = os.getenv("MONGO_DB_URI")
         
         if not mongo_uri:
-            print("MONGO_DB_URI environment variable is not set", file=sys.stderr)
-            print(f"Available environment variables: {dict(os.environ)}", file=sys.stderr)
+            logger.error("MONGO_DB_URI environment variable is not set", 
+                        extra={"environment_variables": dict(os.environ)})
             raise ValueError("MONGO_DB_URI environment variable is not set")
 
-        print(f"Attempting to connect to MongoDB at: {mongo_uri}", file=sys.stderr)
+        logger.info("Attempting to connect to MongoDB", 
+                   extra={"mongodb_uri": mongo_uri})
         
         # Create MongoDB client with timeout settings
         client = MongoClient(
@@ -26,23 +31,27 @@ def get_mongo_client():
         
         # Test the connection
         try:
-            print("Testing MongoDB connection...", file=sys.stderr)
+            logger.debug("Testing MongoDB connection...")
             client.admin.command('ping')
-            print("Successfully connected to MongoDB", file=sys.stderr)
+            logger.info("Successfully connected to MongoDB")
             return client
         except ConnectionFailure as cf:
-            print(f"Server not available: {str(cf)}", file=sys.stderr)
+            logger.error("Server not available", 
+                        extra={"error": str(cf)})
             raise
         except ServerSelectionTimeoutError as sste:
-            print(f"Server selection timeout: {str(sste)}", file=sys.stderr)
-            print("This often means the MongoDB server is not reachable", file=sys.stderr)
+            logger.error("Server selection timeout - MongoDB server is not reachable", 
+                        extra={"error": str(sste)})
             raise
 
     except Exception as e:
-        print(f"Failed to connect to MongoDB: {str(e)}", file=sys.stderr)
-        print(f"Current working directory: {os.getcwd()}", file=sys.stderr)
-        print(f"Python path: {sys.path}", file=sys.stderr)
-        print(f"MongoDB URI: {mongo_uri}", file=sys.stderr)
+        logger.error("Failed to connect to MongoDB", 
+                    extra={
+                        "error": str(e),
+                        "cwd": os.getcwd(),
+                        "python_path": sys.path,
+                        "mongodb_uri": mongo_uri
+                    })
         
         # Check if MongoDB is accessible on the network
         import socket
@@ -50,16 +59,21 @@ def get_mongo_client():
             host = mongo_uri.split('@')[-1].split(':')[0] if '@' in mongo_uri else mongo_uri.split('//')[1].split(':')[0]
             port = int(mongo_uri.split(':')[-1].split('/')[0]) if ':' in mongo_uri else 27017
             
-            print(f"Attempting to check if MongoDB port is accessible at {host}:{port}", file=sys.stderr)
+            logger.debug("Checking MongoDB port accessibility", 
+                        extra={"host": host, "port": port})
+            
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(2)
             result = sock.connect_ex((host, port))
             if result == 0:
-                print(f"Port {port} is open on {host}", file=sys.stderr)
+                logger.info("MongoDB port is accessible", 
+                           extra={"host": host, "port": port})
             else:
-                print(f"Port {port} is not accessible on {host}", file=sys.stderr)
+                logger.error("MongoDB port is not accessible", 
+                            extra={"host": host, "port": port})
             sock.close()
         except Exception as socket_error:
-            print(f"Error checking MongoDB port: {str(socket_error)}", file=sys.stderr)
+            logger.error("Error checking MongoDB port", 
+                        extra={"error": str(socket_error)})
         
         raise

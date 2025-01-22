@@ -1,183 +1,236 @@
-from locust import HttpUser, task, between
-from bson import ObjectId
-import json
-import random
+"""
+Locust load testing script for Inventory Management System API.
+Tests all endpoints defined in the SAM template.
+"""
 
-class InventorySystemUser(HttpUser):
-    wait_time = between(1, 3)
+from locust import HttpUser, task, between
+from random import randint, choice
+import json
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class InventoryManagementUser(HttpUser):
+    """
+    Simulates user behavior for load testing the Inventory Management System API.
+    Includes all endpoints defined in the SAM template.
+    """
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.headers = {
-            "Content-Type": "application/json"
-        }
+    # Wait 1-5 seconds between tasks
+    wait_time = between(1, 5)
     
     def on_start(self):
-        """Initialize test data"""
-        # Create a product first
-        self.product_data = {
-            "name": f"Test Product {ObjectId()}",
-            "description": "Load test product",
-            "category": "test_category",
-            "price": 99.99,
-            "sku": f"TST{ObjectId()}"
+        """
+        Initialize test data and state when user starts.
+        Sets up sample products and store IDs.
+        """
+        # Sample product data for creation
+        self.test_products = [
+            {
+                "name": "Steel Bar Type A",
+                "description": "High-quality steel bar for construction",
+                "category": "raw_materials",
+                "price": 29.99,
+                "sku": f"STL{randint(1000, 9999)}"
+            },
+            {
+                "name": "Iron Rod Type B",
+                "description": "Standard iron rod for industrial use",
+                "category": "raw_materials",
+                "price": 19.99,
+                "sku": f"IRN{randint(1000, 9999)}"
+            },
+            {
+                "name": "Copper Wire Type C",
+                "description": "Premium copper wire for electrical use",
+                "category": "raw_materials",
+                "price": 39.99,
+                "sku": f"CPR{randint(1000, 9999)}"
+            }
+        ]
+        # Track created products for other operations
+        self.created_product_ids = []
+        # Sample store IDs for inventory operations
+        self.store_ids = ["store001", "store002", "store003"]
+        # Initialize by getting existing products
+        self.get_products()
+        logger.info("User session initialized with test data")
+
+    # Product Management Tasks
+    @task(3)
+    def get_products(self):
+        """List all products"""
+        with self.client.get("/products", catch_response=True) as response:
+            if response.status_code == 200:
+                products = response.json()
+                if products and isinstance(products, list):
+                    self.created_product_ids = [p['id'] for p in products]
+                    logger.debug(f"Retrieved {len(products)} products")
+                response.success()
+            else:
+                response.failure(f"Get products failed with status {response.status_code}")
+
+    @task(2)
+    def get_single_product(self):
+        """Get a single product by ID"""
+        if not self.created_product_ids:
+            return
+
+        product_id = choice(self.created_product_ids)
+        with self.client.get(
+            f"/products/{product_id}",
+            catch_response=True
+        ) as response:
+            if response.status_code == 200:
+                response.success()
+            elif response.status_code == 404:
+                # Remove non-existent product ID from our list
+                self.created_product_ids.remove(product_id)
+                response.failure(f"Product {product_id} not found")
+            else:
+                response.failure(f"Get product failed with status {response.status_code}")
+
+    @task(1)
+    def create_product(self):
+        """Create a new product"""
+        product_data = choice(self.test_products).copy()
+        product_data["sku"] = f"{product_data['sku']}{randint(1000, 9999)}"
+        
+        with self.client.post(
+            "/products",
+            json=product_data,
+            catch_response=True
+        ) as response:
+            if response.status_code == 201:
+                try:
+                    result = response.json()
+                    if 'id' in result:
+                        self.created_product_ids.append(result['id'])
+                        response.success()
+                    else:
+                        response.failure("No product ID in response")
+                except json.JSONDecodeError:
+                    response.failure("Invalid JSON response")
+            else:
+                response.failure(f"Create product failed with status {response.status_code}")
+
+    @task(1)
+    def update_product(self):
+        """Update an existing product"""
+        if not self.created_product_ids:
+            return
+
+        product_id = choice(self.created_product_ids)
+        update_data = {
+            "price": round(randint(1000, 5000) / 100, 2),
+            "description": f"Updated description {randint(1, 1000)}"
         }
         
-        # Create product
-        response = self.client.post(
-            "/products",  # Removed /api prefix
-            json=self.product_data,
-            headers=self.headers
-        )
-        
-        if response.status_code in [200, 201]:
-            response_data = response.json()
-            self.product_id = response_data.get("id")
-            print(f"Successfully created product with ID: {self.product_id}")
-            
-            # Initialize inventory for store001
-            self.inventory_data = {
-                "productId": self.product_id,
-                "storeId": "store001",
-                "quantity": 1000,
-                "minStock": 100
-            }
-            inv_response = self.client.post(
-                "/inventory",  # Removed /api prefix
-                json=self.inventory_data,
-                headers=self.headers
-            )
-            if inv_response.status_code in [200, 201]:
-                print(f"Successfully initialized inventory for product {self.product_id}")
-            else:
-                print(f"Failed to initialize inventory (Status {inv_response.status_code}): {inv_response.text}")
-        else:
-            print(f"Failed to create product (Status {response.status_code}): {response.text}")
-
-    @task(3)
-    def list_products(self):
-        """Test getting product list"""
-        with self.client.get(
-            "/products",  # Removed /api prefix
-            headers=self.headers,
+        with self.client.put(
+            f"/products/{product_id}",
+            json=update_data,
             catch_response=True
         ) as response:
             if response.status_code == 200:
                 response.success()
+            elif response.status_code == 404:
+                self.created_product_ids.remove(product_id)
+                response.failure(f"Product {product_id} not found")
             else:
-                response.failure(f"Failed to get products list: {response.text}")
-
-    @task(2)
-    def get_product(self):
-        """Test getting single product"""
-        if hasattr(self, 'product_id'):
-            with self.client.get(
-                f"/products/{self.product_id}",  # Removed /api prefix
-                headers=self.headers,
-                catch_response=True
-            ) as response:
-                if response.status_code == 200:
-                    response.success()
-                else:
-                    response.failure(f"Failed to get product: {response.text}")
-
-    @task(2)
-    def update_product(self):
-        """Test updating product"""
-        if hasattr(self, 'product_id'):
-            update_data = {
-                "price": random.uniform(50, 150)
-            }
-            with self.client.put(
-                f"/products/{self.product_id}",  # Removed /api prefix
-                json=update_data,
-                headers=self.headers,
-                catch_response=True
-            ) as response:
-                if response.status_code == 200:
-                    response.success()
-                else:
-                    response.failure(f"Failed to update product: {response.text}")
-
-    @task(3)
-    def get_store_inventory(self):
-        """Test getting store inventory"""
-        with self.client.get(
-            "/stores/store001/inventory",  # Removed /api prefix
-            headers=self.headers,
-            catch_response=True
-        ) as response:
-            if response.status_code == 200:
-                response.success()
-            else:
-                response.failure(f"Failed to get store inventory: {response.text}")
-
-    @task(2)
-    def transfer_stock(self):
-        """Test stock transfer between stores"""
-        if hasattr(self, 'product_id'):
-            transfer_data = {
-                "productId": self.product_id,
-                "sourceStoreId": "store001",
-                "targetStoreId": "store002",
-                "quantity": random.randint(1, 10)
-            }
-            with self.client.post(
-                "/inventory/transfer",  # Removed /api prefix
-                json=transfer_data,
-                headers=self.headers,
-                catch_response=True
-            ) as response:
-                if response.status_code == 200:
-                    response.success()
-                else:
-                    response.failure(f"Failed to transfer stock: {response.text}")
+                response.failure(f"Update product failed with status {response.status_code}")
 
     @task(1)
-    def check_low_stock_alerts(self):
-        """Test getting low stock alerts"""
-        with self.client.get(
-            "/inventory/alert",  # Removed /api prefix
-            headers=self.headers,
+    def delete_product(self):
+        """Delete a product"""
+        if not self.created_product_ids:
+            return
+
+        product_id = choice(self.created_product_ids)
+        with self.client.delete(
+            f"/products/{product_id}",
             catch_response=True
         ) as response:
             if response.status_code == 200:
+                self.created_product_ids.remove(product_id)
                 response.success()
+            elif response.status_code == 404:
+                self.created_product_ids.remove(product_id)
+                response.failure(f"Product {product_id} not found")
             else:
-                response.failure(f"Failed to get low stock alerts: {response.text}")
+                response.failure(f"Delete product failed with status {response.status_code}")
 
-    @task(1)
+    # Inventory Management Tasks
+    @task(2)
     def create_inventory(self):
-        """Test creating new inventory entry"""
-        if hasattr(self, 'product_id'):
-            inventory_data = {
-                "productId": self.product_id,
-                "storeId": f"store{random.randint(3, 10)}",
-                "quantity": random.randint(100, 1000),
-                "minStock": 50
-            }
-            with self.client.post(
-                "/inventory",  # Removed /api prefix
-                json=inventory_data,
-                headers=self.headers,
-                catch_response=True
-            ) as response:
-                if response.status_code in [200, 201]:
-                    response.success()
-                else:
-                    response.failure(f"Failed to create inventory: {response.text}")
+        """Create inventory entry"""
+        if not self.created_product_ids:
+            return
 
-    def on_stop(self):
-        """Cleanup after tests"""
-        if hasattr(self, 'product_id'):
-            try:
-                response = self.client.delete(
-                    f"/products/{self.product_id}",  # Removed /api prefix
-                    headers=self.headers
-                )
-                if response.status_code in [200, 204]:
-                    print(f"Successfully cleaned up product {self.product_id}")
-                else:
-                    print(f"Failed to clean up product {self.product_id} (Status {response.status_code})")
-            except Exception as e:
-                print(f"Cleanup failed for product {self.product_id}: {e}")
+        inventory_data = {
+            "productId": choice(self.created_product_ids),
+            "storeId": choice(self.store_ids),
+            "quantity": randint(50, 200),
+            "minStock": randint(10, 30)
+        }
+        
+        with self.client.post(
+            "/inventory",
+            json=inventory_data,
+            catch_response=True
+        ) as response:
+            if response.status_code in [200, 201]:
+                response.success()
+            else:
+                response.failure(f"Create inventory failed with status {response.status_code}")
+
+    @task(2)
+    def get_store_inventory(self):
+        """Get store inventory"""
+        store_id = choice(self.store_ids)
+        with self.client.get(
+            f"/stores/{store_id}/inventory",
+            catch_response=True
+        ) as response:
+            if response.status_code == 200:
+                response.success()
+            else:
+                response.failure(f"Get store inventory failed with status {response.status_code}")
+
+    @task(1)
+    def transfer_stock(self):
+        """Transfer stock between stores"""
+        if not self.created_product_ids:
+            return
+
+        source_store = choice(self.store_ids)
+        target_store = choice([s for s in self.store_ids if s != source_store])
+        transfer_data = {
+            "productId": choice(self.created_product_ids),
+            "sourceStoreId": source_store,
+            "targetStoreId": target_store,
+            "quantity": randint(5, 20)
+        }
+        
+        with self.client.post(
+            "/inventory/transfer",
+            json=transfer_data,
+            catch_response=True
+        ) as response:
+            if response.status_code == 200:
+                response.success()
+            else:
+                response.failure(f"Transfer stock failed with status {response.status_code}")
+
+    @task(1)
+    def check_stock_alerts(self):
+        """Check low stock alerts"""
+        with self.client.get(
+            "/inventory/alert",
+            catch_response=True
+        ) as response:
+            if response.status_code == 200:
+                response.success()
+            else:
+                response.failure(f"Check stock alerts failed with status {response.status_code}")

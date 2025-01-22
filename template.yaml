@@ -13,6 +13,9 @@ Globals:
     Environment:
       Variables:
         MONGO_DB_URI: mongodb://mongo:27017/
+        POWERTOOLS_SERVICE_NAME: inventory-management
+        LOG_LEVEL: INFO
+        POWERTOOLS_LOGGER_LOG_EVENT: true
 
 Resources:
   ProductList:
