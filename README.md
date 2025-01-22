@@ -81,12 +81,50 @@ pytest tests/unit/test_movement_service.py
 
 2. For integration tests:
 # Run the API integration tests
+chmod +x ./tests/integration/api/test_api.sh
 ./tests/integration/api/test_api.sh
 
 3. To simplify test execution:
 make test-unit         # Run only unit tests
 make test-integration  # Run only integration tests
 make test             # Run all tests
+
+## Load testing
+
+To use these load tests:
+
+1. Install dependencies:
+pip install -r tests/load/requirements.txt
+
+2. Run the tests with default parameters:
+chmod +x ./tests/load/run_load_tests.sh
+./tests/load/run_load_tests.sh
+
+3. Run with custom parameters:
+./tests/load/run_load_tests.sh --users 50 --spawn-rate 5 --time 5m --host http://your-api-url
+
+Aditional notes:
+
+In the run_load_tests.sh script, the default parameters are:
+
+USERS=10          # Number of concurrent users
+SPAWN_RATE=1      # How many users are spawned per second
+RUN_TIME="1m"     # Test duration (1 minute)
+HOST="http://localhost:3000"
+
+To modify the number of transactions, you can:
+
+1. Increase number of users:
+./run_load_tests.sh --users 50
+# ~1500 total transactions
+
+2.Increase test duration:
+./run_load_tests.sh --time 5m
+# ~1500 total transactions
+
+3. Both:
+./run_load_tests.sh --users 50 --time 5m
+# ~7500 total transactions
 
 ## Project Structure
 
