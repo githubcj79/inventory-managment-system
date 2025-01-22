@@ -83,7 +83,7 @@ pytest tests/unit/test_movement_service.py
 # Run the API integration tests
 ./tests/integration/api/test_api.sh
 
-3. To simplify test execution
+3. To simplify test execution:
 make test-unit         # Run only unit tests
 make test-integration  # Run only integration tests
 make test             # Run all tests
@@ -154,3 +154,10 @@ Required environment variables:
 - `timestamp`: DateTime
 - `type`: Enum(IN, OUT, TRANSFER)
 
+## Annexes
+
+## Evidence of integration_tests
+docs/evidence_of_integration_tests.txt
+
+## Evidence of unit tests coverage
+docs/evidence_of_unit_tests_coverage.txt
