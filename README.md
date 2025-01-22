@@ -126,41 +126,14 @@ To modify the number of transactions, you can:
 ./run_load_tests.sh --users 50 --time 5m
 # ~7500 total transactions
 
-## Project Structure
+Information generated
 
-.
-├── docker-compose.yml
-├── Dockerfile
-├── docs
-│   └── Ejercicio 1 - Sistema de Gestion de Inventario.pdf
-├── makefile
-├── Notes.md
-├── pytest.ini
-├── README.md
-├── requirements.txt
-├── scripts
-│   └── init_db.py
-├── src
-│   ├── app.py
-│   ├── common
-│   │   ├── db_utils.py
-│   │   └── __init__.py
-│   ├── __init__.py
-│   └── requirements.txt
-├── template.yaml
-└── tests
-    ├── __init__.py
-    ├── integration
-    │   ├── api
-    │   │   └── test_api.sh
-    │   ├── conftest.py
-    │   └── __init__.py
-    └── unit
-        ├── conftest.py
-        ├── __init__.py
-        ├── test_inventory_service.py
-        ├── test_movement_service.py
-        └── test_product_service.py
+1. Terminal (screen) output
+
+2. Three csv files:
+load_test_metrics_YYYYMMDD_HHMMSS_stats.csv: Contains overall statistics for each endpoint
+load_test_metrics_YYYYMMDD_HHMMSS_stats_history.csv: Contains time-series data of the test execution
+load_test_metrics_YYYYMMDD_HHMMSS_failures.csv: Lists all failed requests
 
 ## Environment Variables (defined in template.yaml)
 
@@ -199,3 +172,6 @@ docs/evidence_of_integration_tests.txt
 
 ## Evidence of unit tests coverage
 docs/evidence_of_unit_tests_coverage.txt
+
+## Evidence of load test
+docs/evidence_of_load_test.txt

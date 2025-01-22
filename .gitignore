@@ -112,3 +112,4 @@ tmp/
 
 # Project specific
 Notes.md
+*.csv
